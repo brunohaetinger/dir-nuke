@@ -2,6 +2,8 @@
 name = "dir-nuke"
 version = "0.1.0"
 edition = "2024"
+license = "MIT"
+description = "CLI tool to clean dependencies directories, like node_modules"
 
 [dependencies]
 crossterm = "0.29.0"    # Terminal backend
@@ -9,3 +11,10 @@ dialoguer = "0.11.0"    # For multi-select prompt
 duct = "1.0.0"          # For shell-like process running (e.g. `find`, `du`)
 ratatui = "0.29.0"      # tui fork with more features
 regex = "1.11.1"        
+
+[package.metadata.deb]
+maintainer = "Bruno Haetinger <brunohaetinger@gmail.com"
+depends = "libc6 (>= 2.2.5)"
+assets = [
+    ["target/release/dir-nuke", "usr/bin/", "755"]
+]
