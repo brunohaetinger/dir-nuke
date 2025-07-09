@@ -24,4 +24,9 @@ This project is a directory nuker. It is designed to safely and efficiently remo
 
 `cargo run ~/Projects`
 
-On selection list, hit `Space` to select/unselect a directory.
+- On selection list
+    - `Space`: select/unselect a directory;
+    - ⬇ or `j`: move down on list;
+    - ⬆ or `k`: move up on list;
+    - `ctrl+c`: finish application;
+    - `Enter`: delete selected directories;
