@@ -1,5 +1,5 @@
 pkgname=dir-nuke
-pkgver=1.0.0
+pkgver=0.1.0
 pkgrel=1
 arch=('x86_64')
 url="https://github.com/brunohaetinger/dir-nuke"

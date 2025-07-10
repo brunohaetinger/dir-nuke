@@ -12,6 +12,7 @@ duct = "1.0.0"          # For shell-like process running (e.g. `find`, `du`)
 ratatui = "0.29.0"      # tui fork with more features
 regex = "1.11.1"        
 
+# For generating debian .deb
 [package.metadata.deb]
 maintainer = "Bruno Haetinger <brunohaetinger@gmail.com"
 depends = "libc6 (>= 2.2.5)"
