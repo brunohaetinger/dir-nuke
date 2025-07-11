@@ -11,6 +11,9 @@ dialoguer = "0.11.0"    # For multi-select prompt
 duct = "1.0.0"          # For shell-like process running (e.g. `find`, `du`)
 ratatui = "0.29.0"      # tui fork with more features
 regex = "1.11.1"        
+rayon = "1.8"
+walkdir = "2.5"         # Recursively walk the filesystem
+humansize = "2.1"       # To display sizes like 32MB instead of raw bytes
 
 # For generating debian .deb
 [package.metadata.deb]
