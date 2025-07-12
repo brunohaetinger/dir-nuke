@@ -100,6 +100,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     list_state.select(Some(0));
     let mut selected = vec![false; entries.len()];
 
+    terminal.clear().unwrap();
     loop {
         terminal.draw(|f| {
             let size = f.area();
@@ -149,7 +150,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         disable_raw_mode()?;
                         crossterm::execute!(terminal.backend_mut(), DisableMouseCapture)?;
                         terminal.show_cursor()?;
-                        println!("❌ Cancelled.");
+                        terminal.clear()?;
+                        println!("\n❌ Cancelled.");
                         return Ok(());
                     }
                     _ => {}
