@@ -1,12 +1,10 @@
 use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::sync::mpsc;
-use std::thread;
 
 use rayon::prelude::*;
 use walkdir::WalkDir;
-use humansize::{FileSize, file_size_opts};
+use humansize::{format_size, DECIMAL};
 
 use crossterm::event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode};
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
@@ -22,12 +20,22 @@ struct NodeModuleEntry {
 }
 
 fn find_node_modules(base: &Path) -> Vec<PathBuf> {
-    WalkDir::new(base)
-        .into_iter()
-        .filter_map(Result::ok)
-        .filter(|e| e.file_type().is_dir() && e.file_name() == "node_modules")
-        .map(|e| e.into_path())
-        .collect()
+    let mut result = Vec::new();
+    let mut walker = WalkDir::new(base).into_iter();
+
+    while let Some(entry_result) = walker.next() {
+        match entry_result {
+            Ok(entry) => {
+                if entry.file_type().is_dir() && entry.file_name() == "node_modules" {
+                    result.push(entry.path().to_path_buf());
+                    walker.skip_current_dir(); // ✅ safe now
+                }
+            }
+            Err(_) => continue, // Ignore errors
+        }
+    }
+
+    result
 }
 
 fn dir_size_recursive(path: &Path) -> u64 {
@@ -57,10 +65,7 @@ fn calculate_sizes(dirs: &[PathBuf]) -> Vec<NodeModuleEntry> {
 }
 
 fn human_label(entry: &NodeModuleEntry) -> String {
-    let size = entry
-        .size_bytes
-        .file_size(file_size_opts::DECIMAL)
-        .unwrap_or("???".into());
+    let size = format_size(entry.size_bytes, DECIMAL);
     format!("{} - {}", size, entry.path.display())
 }
 
@@ -97,7 +102,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     loop {
         terminal.draw(|f| {
-            let size = f.size();
+            let size = f.area();
             let chunks = Layout::default()
                 .direction(Direction::Vertical)
                 .margin(1)
@@ -107,9 +112,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let items_rendered: Vec<ListItem> = items
                 .iter()
                 .enumerate()
-                .map(|(i, item)| {
+                .map(|(i, _item)| {
                     let prefix = if selected[i] { "[x] " } else { "[ ] " };
-                    ListItem::new(prefix.to_string() + &item.content.to_string())
+                    ListItem::new(prefix.to_string() + &human_label(&entries[i]))
                 })
                 .collect();
 
@@ -160,7 +165,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let to_delete: Vec<&NodeModuleEntry> = entries
         .iter()
         .zip(selected.iter())
-        .filter(|(_, &sel)| sel)
+        .filter(|&(_, sel)| *sel)
         .map(|(entry, _)| entry)
         .collect();
 
