@@ -22,11 +22,18 @@ This project is a directory nuker. It is designed to safely and efficiently remo
 
 ### Cloning the project
 
-`cargo run ~/Projects`
+```bash
+cargo run ~/Projects
+```
 
-- On selection list
-    - `Space`: select/unselect a directory;
-    - ⬇ or `j`: move down on list;
-    - ⬆ or `k`: move up on list;
-    - `ctrl+c`: finish application;
-    - `Enter`: delete selected directories;
+### TUI Keybindings
+
+| Keybinding        | Action                               |
+|-------------------|--------------------------------------|
+| `Down`, `j`, `Tab`| Move down on the list                |
+| `Up`, `k`, `BackTab`| Move up on the list                  |
+| `Space`           | Toggle selection of a directory      |
+| `h`               | Unselect current item                |
+| `l`               | Select current item                  |
+| `Enter`           | Confirm and delete selected directories |
+| `Esc`, `q`        | Cancel application and exit          |
