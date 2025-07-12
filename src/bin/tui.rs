@@ -120,7 +120,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .collect();
 
             let list = List::new(items_rendered)
-                .block(Block::default().borders(Borders::ALL).title("Select node_modules to delete (space = toggle, enter = confirm)"))
+                .block(Block::default().borders(Borders::ALL).title("Select node_modules to delete (space = toggle ✔️, enter = confirm ✅)"))
                 .highlight_style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD));
 
             f.render_stateful_widget(list, chunks[0], &mut list_state);
@@ -129,12 +129,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         if event::poll(std::time::Duration::from_millis(100))? {
             if let Event::Key(key) = event::read()? {
                 match key.code {
-                    KeyCode::Down => {
+                    KeyCode::Down | KeyCode::Char('j') | KeyCode::Tab => {
                         let i = list_state.selected().unwrap_or(0);
                         let next = if i >= entries.len() - 1 { 0 } else { i + 1 };
                         list_state.select(Some(next));
                     }
-                    KeyCode::Up => {
+                    KeyCode::Up | KeyCode::Char('k') | KeyCode::BackTab  => {
                         let i = list_state.selected().unwrap_or(0);
                         let prev = if i == 0 { entries.len() - 1 } else { i - 1 };
                         list_state.select(Some(prev));
@@ -143,10 +143,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         let i = list_state.selected().unwrap_or(0);
                         selected[i] = !selected[i];
                     }
+                    KeyCode::Char('h') => {
+                        let i = list_state.selected().unwrap_or(0);
+                        selected[i] = false;
+                    }
+                    KeyCode::Char('l') => {
+                        let i = list_state.selected().unwrap_or(0);
+                        selected[i] = true;
+                    }
                     KeyCode::Enter => {
                         break;
                     }
-                    KeyCode::Esc => {
+                    KeyCode::Esc | KeyCode::Char('q') => {
                         disable_raw_mode()?;
                         crossterm::execute!(terminal.backend_mut(), DisableMouseCapture)?;
                         terminal.show_cursor()?;
