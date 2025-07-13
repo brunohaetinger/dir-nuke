@@ -6,7 +6,6 @@ use std::time::Instant;
 
 fn main() {
     let target_dir = get_target_path();
-    let args: Vec<String> = std::env::args().collect();
 
     println!("🔍 Searching for node_modules in {}", target_dir);
     let scan_start = Instant::now();
