@@ -26,3 +26,7 @@ assets = [
 [[bin]]
 name = "dir-nuke"
 path = "src/bin/tui.rs"
+
+[[bin]]
+name = "dir-nuke-classic"
+path = "src/bin/classic.rs"
