@@ -22,3 +22,7 @@ depends = "libc6 (>= 2.2.5)"
 assets = [
     ["target/release/dir-nuke", "usr/bin/", "755"]
 ]
+
+[[bin]]
+name = "dir-nuke"
+path = "src/bin/tui.rs"
