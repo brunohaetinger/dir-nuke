@@ -1,7 +1,9 @@
-use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::time::Instant;
 
+use dir_nuke::cli::get_target_path;
+use dir_nuke::cli::is_verbose;
 use rayon::prelude::*;
 use walkdir::WalkDir;
 use humansize::{format_size, DECIMAL};
@@ -70,14 +72,19 @@ fn human_label(entry: &NodeModuleEntry) -> String {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let target = env::args().nth(1).unwrap_or_else(|| ".".to_string());
-    let base_path = Path::new(&target);
+    let target_dir = get_target_path();
+    let base_path = Path::new(&target_dir);
 
     println!("🔍 Scanning for node_modules folders in {:?}...", base_path);
+    let scan_start = Instant::now();
     let found_dirs = find_node_modules(base_path);
     if found_dirs.is_empty() {
         println!("✅ No node_modules folders found.");
         return Ok(());
+    }
+    let search_duration = scan_start.elapsed();
+    if is_verbose(){
+        println!("⏰ Scan duration was: {:?}", search_duration);
     }
 
     println!("📦 Calculating sizes...");
@@ -160,6 +167,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         terminal.show_cursor()?;
                         terminal.clear()?;
                         println!("\n❌ Cancelled.");
+                        if is_verbose(){
+                            println!("⏰ Scanning duration was: {:?}", search_duration);
+                        }
+
                         return Ok(());
                     }
                     _ => {}
@@ -171,7 +182,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     disable_raw_mode()?;
     crossterm::execute!(terminal.backend_mut(), DisableMouseCapture)?;
     terminal.show_cursor()?;
-
+    ratatui::restore();
     let to_delete: Vec<&NodeModuleEntry> = entries
         .iter()
         .zip(selected.iter())

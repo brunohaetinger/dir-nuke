@@ -1,13 +1,15 @@
 use dialoguer::{theme::ColorfulTheme, MultiSelect};
+use dir_nuke::cli::{get_target_path, is_verbose};
 use duct::cmd;
 use std::fs;
-use std::process;
+use std::time::Instant;
 
 fn main() {
-    let target_dir = std::env::args().nth(1).unwrap_or_else(|| ".".into());
+    let target_dir = get_target_path();
+    let args: Vec<String> = std::env::args().collect();
 
     println!("🔍 Searching for node_modules in {}", target_dir);
-
+    let scan_start = Instant::now();
     let find_cmd = format!(
         "find {} -type d -name node_modules -prune -exec du -sh {{}} +",
         target_dir
@@ -28,7 +30,12 @@ fn main() {
             }
         })
         .collect();
-
+    
+    let scan_duration = scan_start.elapsed();
+    if is_verbose() {
+        println!("⏰ Scan duration was: {:?}", scan_duration);
+    }
+    
     if lines.is_empty() {
         println!("✅ No node_modules found.");
         return;
@@ -59,6 +66,7 @@ fn main() {
             eprintln!("❌ Failed to delete {}: {}", path, e);
         }
     }
+    
 
     println!("✅ Done.");
 }
