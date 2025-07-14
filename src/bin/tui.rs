@@ -1,24 +1,177 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::Instant;
+use std::io;
 
 use dir_nuke::cli::get_target_path;
 use dir_nuke::cli::is_verbose;
+use ratatui::widgets::ListState;
 use rayon::prelude::*;
 use walkdir::WalkDir;
 use humansize::{format_size, DECIMAL};
 
-use crossterm::event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode};
-use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
-use ratatui::backend::CrosstermBackend;
-use ratatui::widgets::{Block, Borders, List, ListItem, ListState};
-use ratatui::Terminal;
-use ratatui::layout::{Layout, Constraint, Direction};
-use ratatui::style::{Style, Modifier, Color};
+use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
+use ratatui::{
+    buffer::Buffer,
+    layout::Rect,
+    style::Stylize,
+    symbols::border,
+    text::{Line, Text},
+    widgets::{Block, Paragraph, Widget},
+    DefaultTerminal, Frame,
+};
 
+#[derive(Debug, Default)]
 struct NodeModuleEntry {
     path: PathBuf,
     size_bytes: u64,
+}
+
+#[derive(Debug, Default)]
+pub struct App {
+    list_state: ListState,
+    selected: Vec<bool>,
+    entries: Vec<NodeModuleEntry>,
+    exit: bool,
+}
+
+
+impl App {
+
+    pub fn new(entries: Vec<NodeModuleEntry>)-> App {
+        let mut list_state = ListState::default();
+        if !entries.is_empty() {
+            list_state.select(Some(0));
+        }
+        let selected = vec![false; entries.len()];
+
+        App {
+            list_state,
+            selected,
+            entries,
+            exit: false,
+        }
+    }
+
+    /// runs the application's main loop until the user quits
+    pub fn run(&mut self, terminal: &mut DefaultTerminal) -> io::Result<()> {
+        while !self.exit {
+            terminal.draw(|frame| self.draw(frame))?;
+            self.handle_events()?;
+        }
+        Ok(())
+    }
+
+    fn draw(&self, frame: &mut Frame) {
+        frame.render_widget(self, frame.area());
+    }
+
+    // updates the application's state based on user input
+    fn handle_events(&mut self) -> io::Result<()> {
+        match event::read()? {
+            // it's important to check that the event is a key press event as
+            // crossterm also emits key release and repeat events on Windows.
+            Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
+                self.handle_key_event(key_event)
+            }
+            _ => {}
+        };
+        Ok(())
+    }
+
+    fn handle_key_event(&mut self, key_event: KeyEvent) {
+        match key_event.code {
+            KeyCode::Esc | KeyCode::Char('q') => self.exit(),
+            KeyCode::Enter => self.delete_selected(),
+            KeyCode::Char('l') => self.select_item(),
+            KeyCode::Char('h') => self.unselect_item(),
+            KeyCode::Char(' ') => self.toggle_item_selection(),
+            KeyCode::Up | KeyCode::Char('k') | KeyCode::BackTab => self.move_up(),
+            KeyCode::Down | KeyCode::Char('j') | KeyCode::Tab => self.move_down(),
+            _ => {}
+        }
+    }
+
+    fn exit(&mut self) {
+        self.exit = true;
+    }
+
+    fn delete_selected(&mut self) {
+        let to_delete: Vec<&NodeModuleEntry> = self.entries
+            .iter()
+            .zip(self.selected.iter())
+            .filter(|&(_, sel)| *sel)
+            .map(|(entry, _)| entry)
+            .collect();
+
+        println!("🗑 Deleting {} folders...", to_delete.len());
+        for entry in to_delete {
+            if let Err(e) = fs::remove_dir_all(&entry.path) {
+                eprintln!("❌ Failed to delete {}: {}", entry.path.display(), e);
+            } else {
+                println!("✅ Deleted {}", entry.path.display());
+            }
+        }
+
+        println!("🎉 Done.");
+    }
+
+    fn select_item(&mut self) {
+        let i = self.list_state.selected().unwrap_or(0);
+        self.selected[i] = true;
+    }
+
+    fn unselect_item(&mut self) {
+        let i = self.list_state.selected().unwrap_or(0);
+        self.selected[i] = false;
+    }
+
+    fn toggle_item_selection(&mut self) {
+        let i = self.list_state.selected().unwrap_or(0);
+        self.selected[i] = !self.selected[i];
+    }
+
+    fn move_up(&mut self) {
+        let i = self.list_state.selected().unwrap_or(0);
+        let prev = if i == 0 { self.entries.len() - 1 } else { i - 1 };
+        self.list_state.select(Some(prev));
+    }
+
+    fn move_down(&mut self) {
+        let i = self.list_state.selected().unwrap_or(0);
+        let next = if i >= self.entries.len() - 1 { 0 } else { i + 1 };
+        self.list_state.select(Some(next));
+    }
+}
+
+impl Widget for &App {
+    fn render(self, area: Rect, buf: &mut Buffer) {
+        let title = Line::from(" Counter App Tutorial ".bold());
+        let instructions = Line::from(vec![
+            " Toggle selection ".into(),
+            "<Space>".blue().bold(),
+            " | ".into(),
+            " Delete selected ".into(),
+            "<Enter>".blue().bold(),
+            " | ".into(),
+            " Quit ".into(),
+            "<Esc> ".blue().bold(),
+        ]);
+        let block = Block::bordered()
+            .title(title.centered())
+            .title_bottom(instructions.centered())
+            .border_set(border::THICK);
+
+        let counter_text = Text::from(vec![Line::from(vec![
+            "Value: ".into(),
+            "0".yellow(),
+        ])]);
+
+        Paragraph::new(counter_text)
+            .centered()
+            .block(block)
+            .render(area, buf);
+    }
 }
 
 fn find_node_modules(base: &Path) -> Vec<PathBuf> {
@@ -71,7 +224,7 @@ fn human_label(entry: &NodeModuleEntry) -> String {
     format!("{} - {}", size, entry.path.display())
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() -> io::Result<()>{
     let target_dir = get_target_path();
     let base_path = Path::new(&target_dir);
 
@@ -91,114 +244,63 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut entries = calculate_sizes(&found_dirs);
     entries.sort_by_key(|e| std::cmp::Reverse(e.size_bytes));
 
-    // Setup terminal UI
-    enable_raw_mode()?;
-    let mut stdout = std::io::stdout();
-    crossterm::execute!(stdout, EnableMouseCapture)?;
-    let backend = CrosstermBackend::new(stdout);
-    let mut terminal = Terminal::new(backend)?;
+    // TODO: calculate sum of size_bytes in entries
 
-    let items: Vec<ListItem> = entries
-        .iter()
-        .map(|e| ListItem::new(human_label(e)))
-        .collect();
-
-    let mut list_state = ListState::default();
-    list_state.select(Some(0));
-    let mut selected = vec![false; entries.len()];
-
-    terminal.clear().unwrap();
-    loop {
-        terminal.draw(|f| {
-            let size = f.area();
-            let chunks = Layout::default()
-                .direction(Direction::Vertical)
-                .margin(1)
-                .constraints([Constraint::Min(1), Constraint::Length(3)].as_ref())
-                .split(size);
-
-            let items_rendered: Vec<ListItem> = items
-                .iter()
-                .enumerate()
-                .map(|(i, _item)| {
-                    let prefix = if selected[i] { "[x] " } else { "[ ] " };
-                    ListItem::new(prefix.to_string() + &human_label(&entries[i]))
-                })
-                .collect();
-
-            let list = List::new(items_rendered)
-                .block(Block::default().borders(Borders::ALL).title("Select node_modules to delete (space = toggle ✔️, enter = confirm ✅)"))
-                .highlight_style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD));
-
-            f.render_stateful_widget(list, chunks[0], &mut list_state);
-        })?;
-
-        if event::poll(std::time::Duration::from_millis(100))? {
-            if let Event::Key(key) = event::read()? {
-                match key.code {
-                    KeyCode::Down | KeyCode::Char('j') | KeyCode::Tab => {
-                        let i = list_state.selected().unwrap_or(0);
-                        let next = if i >= entries.len() - 1 { 0 } else { i + 1 };
-                        list_state.select(Some(next));
-                    }
-                    KeyCode::Up | KeyCode::Char('k') | KeyCode::BackTab  => {
-                        let i = list_state.selected().unwrap_or(0);
-                        let prev = if i == 0 { entries.len() - 1 } else { i - 1 };
-                        list_state.select(Some(prev));
-                    }
-                    KeyCode::Char(' ') => {
-                        let i = list_state.selected().unwrap_or(0);
-                        selected[i] = !selected[i];
-                    }
-                    KeyCode::Char('h') => {
-                        let i = list_state.selected().unwrap_or(0);
-                        selected[i] = false;
-                    }
-                    KeyCode::Char('l') => {
-                        let i = list_state.selected().unwrap_or(0);
-                        selected[i] = true;
-                    }
-                    KeyCode::Enter => {
-                        break;
-                    }
-                    KeyCode::Esc | KeyCode::Char('q') => {
-                        disable_raw_mode()?;
-                        crossterm::execute!(terminal.backend_mut(), DisableMouseCapture)?;
-                        terminal.show_cursor()?;
-                        terminal.clear()?;
-                        println!("\n❌ Cancelled.");
-                        if is_verbose(){
-                            println!("⏰ Scanning duration was: {:?}", search_duration);
-                        }
-
-                        return Ok(());
-                    }
-                    _ => {}
-                }
-            }
-        }
-    }
-
-    disable_raw_mode()?;
-    crossterm::execute!(terminal.backend_mut(), DisableMouseCapture)?;
-    terminal.show_cursor()?;
+    // -- NEW tui
+    let mut terminal = ratatui::init();
+    let mut app = App::new(entries);
+    let app_result = app.run(&mut terminal);
     ratatui::restore();
-    let to_delete: Vec<&NodeModuleEntry> = entries
-        .iter()
-        .zip(selected.iter())
-        .filter(|&(_, sel)| *sel)
-        .map(|(entry, _)| entry)
-        .collect();
+    // if is_verbose(){
+    //      println!("⏰ Scanning duration was: {:?}", search_duration);
+    // }
+    app_result
 
-    println!("🗑 Deleting {} folders...", to_delete.len());
-    for entry in to_delete {
-        if let Err(e) = fs::remove_dir_all(&entry.path) {
-            eprintln!("❌ Failed to delete {}: {}", entry.path.display(), e);
-        } else {
-            println!("✅ Deleted {}", entry.path.display());
-        }
-    }
 
-    println!("🎉 Done.");
-    Ok(())
+    // -- Setup TUI
+    // enable_raw_mode()?;
+    // let mut stdout = std::io::stdout();
+    // crossterm::execute!(stdout, EnableMouseCapture)?;
+    // let backend = CrosstermBackend::new(stdout);
+    // let mut terminal = Terminal::new(backend)?;
+
+    // let items: Vec<ListItem> = entries
+    //     .iter()
+    //     .map(|e| ListItem::new(human_label(e)))
+    //     .collect();
+
+    // let mut list_state = ListState::default();
+    // list_state.select(Some(0));
+    // let mut selected = vec![false; entries.len()];
+
+    // terminal.clear().unwrap();
+    // loop {
+    //     // TODO: App Draw
+    //     terminal.draw(|f| {
+    //         let size = f.area();
+    //         let chunks = Layout::default()
+    //             .direction(Direction::Vertical)
+    //             .margin(1)
+    //             .constraints([Constraint::Min(1), Constraint::Length(3)].as_ref())
+    //             .split(size);
+
+    //         let items_rendered: Vec<ListItem> = items
+    //             .iter()
+    //             .enumerate()
+    //             .map(|(i, _item)| {
+    //                 let prefix = if selected[i] { "[x] " } else { "[ ] " };
+    //                 ListItem::new(prefix.to_string() + &human_label(&entries[i]))
+    //             })
+    //             .collect();
+
+    //         let list = List::new(items_rendered)
+    //             .block(Block::default().borders(Borders::ALL).title("Select node_modules to delete (space = toggle ✔️, enter = confirm ✅)"))
+    //             .highlight_style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD));
+
+    //         f.render_stateful_widget(list, chunks[0], &mut list_state);
+    //     })?;
+
+
+
+    // Ok(())
 }
