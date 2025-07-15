@@ -14,15 +14,14 @@ use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
 use ratatui::{
     buffer::Buffer,
     layout::Rect,
-    style::Stylize,
+    style::{Color, Modifier, Style, Stylize},
     symbols::border,
-    text::{Line, Text},
-    widgets::{Block, Paragraph, Widget},
+    text::{Line},
+    widgets::{Block, List, ListItem, Widget},
     DefaultTerminal, Frame,
 };
-
 #[derive(Debug, Default)]
-struct NodeModuleEntry {
+pub struct NodeModuleEntry {
     path: PathBuf,
     size_bytes: u64,
 }
@@ -146,7 +145,7 @@ impl App {
 
 impl Widget for &App {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let title = Line::from(" Counter App Tutorial ".bold());
+        let title = Line::from(" dir-nuke 💥".bold());
         let instructions = Line::from(vec![
             " Toggle selection ".into(),
             "<Space>".blue().bold(),
@@ -162,15 +161,21 @@ impl Widget for &App {
             .title_bottom(instructions.centered())
             .border_set(border::THICK);
 
-        let counter_text = Text::from(vec![Line::from(vec![
-            "Value: ".into(),
-            "0".yellow(),
-        ])]);
+        let items: Vec<ListItem> = self.entries
+            .iter()
+            .enumerate()
+            .map(|(i, entry)| {
+                let prefix = if self.selected[i] { "[x] " } else { "[ ] " };
+                ListItem::new(prefix.to_string() + &human_label(entry))
+            })
+            .collect();
 
-        Paragraph::new(counter_text)
-            .centered()
+        let list = List::new(items)
             .block(block)
-            .render(area, buf);
+            .highlight_style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD));
+
+        // Render the list using the list_state
+        ratatui::widgets::StatefulWidget::render(list, area, buf, &mut self.list_state.clone());
     }
 }
 
