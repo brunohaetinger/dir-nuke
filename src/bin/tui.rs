@@ -5,7 +5,7 @@ use std::io;
 
 use dir_nuke::cli::get_target_path;
 use dir_nuke::cli::is_verbose;
-use ratatui::widgets::ListState;
+use ratatui::widgets::{ListState, Paragraph};
 use rayon::prelude::*;
 use walkdir::WalkDir;
 use humansize::{format_size, DECIMAL};
@@ -16,7 +16,7 @@ use ratatui::{
     layout::Rect,
     style::{Color, Modifier, Style, Stylize},
     symbols::border,
-    text::{Line},
+    text::{Line, Text},
     widgets::{Block, List, ListItem, Widget},
     DefaultTerminal, Frame,
 };
@@ -32,6 +32,7 @@ pub struct App {
     selected: Vec<bool>,
     entries: Vec<NodeModuleEntry>,
     exit: bool,
+    messages: Vec<String>, // New field to store messages
 }
 
 
@@ -43,12 +44,14 @@ impl App {
             list_state.select(Some(0));
         }
         let selected = vec![false; entries.len()];
+        let messages = Vec::new(); // Initialize messages
 
         App {
             list_state,
             selected,
             entries,
             exit: false,
+            messages, // Add messages to the struct
         }
     }
 
@@ -81,7 +84,7 @@ impl App {
     fn handle_key_event(&mut self, key_event: KeyEvent) {
         match key_event.code {
             KeyCode::Esc | KeyCode::Char('q') => self.exit(),
-            KeyCode::Enter => self.delete_selected(),
+            KeyCode::Delete => self.delete_selected(),
             KeyCode::Char('l') => self.select_item(),
             KeyCode::Char('h') => self.unselect_item(),
             KeyCode::Char(' ') => self.toggle_item_selection(),
@@ -103,16 +106,17 @@ impl App {
             .map(|(entry, _)| entry)
             .collect();
 
-        println!("🗑 Deleting {} folders...", to_delete.len());
+        self.messages.push(format!("🗑 Deleting {} folders...", to_delete.len()));
         for entry in to_delete {
             if let Err(e) = fs::remove_dir_all(&entry.path) {
-                eprintln!("❌ Failed to delete {}: {}", entry.path.display(), e);
+                self.messages.push(format!("❌ Failed to delete {}: {}", entry.path.display(), e));
             } else {
-                println!("✅ Deleted {}", entry.path.display());
+                self.messages.push(format!("✅ Deleted {}", entry.path.display()));
+                self.exit = true;
             }
         }
 
-        println!("🎉 Done.");
+        self.messages.push("🎉 Done.".to_string());
     }
 
     fn select_item(&mut self) {
@@ -145,13 +149,23 @@ impl App {
 
 impl Widget for &App {
     fn render(self, area: Rect, buf: &mut Buffer) {
+        use ratatui::layout::{Constraint, Direction, Layout};
+
+        let chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([
+                Constraint::Min(0), // For the list
+                Constraint::Length(self.messages.len() as u16 + 2), // For messages + border
+            ])
+            .split(area);
+
         let title = Line::from(" dir-nuke 💥".bold());
         let instructions = Line::from(vec![
             " Toggle selection ".into(),
             "<Space>".blue().bold(),
             " | ".into(),
             " Delete selected ".into(),
-            "<Enter>".blue().bold(),
+            "<Del>".blue().bold(),
             " | ".into(),
             " Quit ".into(),
             "<Esc> ".blue().bold(),
@@ -175,7 +189,13 @@ impl Widget for &App {
             .highlight_style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD));
 
         // Render the list using the list_state
-        ratatui::widgets::StatefulWidget::render(list, area, buf, &mut self.list_state.clone());
+        ratatui::widgets::StatefulWidget::render(list, chunks[0], buf, &mut self.list_state.clone());
+
+        // Render messages
+        let messages_text: Vec<Line> = self.messages.iter().map(|msg| Line::from(msg.clone())).collect();
+        let messages_block = Block::bordered().title("Messages");
+        let messages_paragraph = Paragraph::new(Text::from(messages_text)).block(messages_block);
+        messages_paragraph.render(chunks[1], buf);
     }
 }
 
@@ -256,56 +276,6 @@ fn main() -> io::Result<()>{
     let mut app = App::new(entries);
     let app_result = app.run(&mut terminal);
     ratatui::restore();
-    // if is_verbose(){
-    //      println!("⏰ Scanning duration was: {:?}", search_duration);
-    // }
     app_result
 
-
-    // -- Setup TUI
-    // enable_raw_mode()?;
-    // let mut stdout = std::io::stdout();
-    // crossterm::execute!(stdout, EnableMouseCapture)?;
-    // let backend = CrosstermBackend::new(stdout);
-    // let mut terminal = Terminal::new(backend)?;
-
-    // let items: Vec<ListItem> = entries
-    //     .iter()
-    //     .map(|e| ListItem::new(human_label(e)))
-    //     .collect();
-
-    // let mut list_state = ListState::default();
-    // list_state.select(Some(0));
-    // let mut selected = vec![false; entries.len()];
-
-    // terminal.clear().unwrap();
-    // loop {
-    //     // TODO: App Draw
-    //     terminal.draw(|f| {
-    //         let size = f.area();
-    //         let chunks = Layout::default()
-    //             .direction(Direction::Vertical)
-    //             .margin(1)
-    //             .constraints([Constraint::Min(1), Constraint::Length(3)].as_ref())
-    //             .split(size);
-
-    //         let items_rendered: Vec<ListItem> = items
-    //             .iter()
-    //             .enumerate()
-    //             .map(|(i, _item)| {
-    //                 let prefix = if selected[i] { "[x] " } else { "[ ] " };
-    //                 ListItem::new(prefix.to_string() + &human_label(&entries[i]))
-    //             })
-    //             .collect();
-
-    //         let list = List::new(items_rendered)
-    //             .block(Block::default().borders(Borders::ALL).title("Select node_modules to delete (space = toggle ✔️, enter = confirm ✅)"))
-    //             .highlight_style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD));
-
-    //         f.render_stateful_widget(list, chunks[0], &mut list_state);
-    //     })?;
-
-
-
-    // Ok(())
 }

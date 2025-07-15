@@ -35,5 +35,5 @@ cargo run ~/Projects
 | `Space`           | Toggle selection of a directory      |
 | `h`               | Unselect current item                |
 | `l`               | Select current item                  |
-| `Enter`           | Confirm and delete selected directories |
+| `Del`           | Confirm and delete selected directories |
 | `Esc`, `q`        | Cancel application and exit          |
