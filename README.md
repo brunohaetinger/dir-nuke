@@ -8,6 +8,7 @@
 ## Table of Contents
 - [About](#about)
 - [Important Information](#important-information)
+- [Usage](#usage)
 
 ## About
 This project is a directory nuker. It is designed to safely and efficiently remove specified directories and their contents.
@@ -20,11 +21,13 @@ This project is a directory nuker. It is designed to safely and efficiently remo
 
 ## Usage
 
-### 🚀 Quick Install
+<details><summary>🚀 Quick Install</summary>
 
 To install the latest version of dir-nuke, run:
 
-> curl -sSfL https://raw.githubusercontent.com/brunohaetinger/dir-nuke/main/scripts/install-dir-nuke.sh | bash
+```sh
+curl -sSfL https://raw.githubusercontent.com/brunohaetinger/dir-nuke/main/scripts/install-dir-nuke.sh | bash
+```
 
 This script will:
 
@@ -34,15 +37,23 @@ This script will:
 
 After installation:
 
-> dir-nuke --help
+```sh
+dir-nuke --help
+```
 
+</details>
 
-### Building yourself
+<details><summary>Building yourself</summary>
 
 > Rust is required on this method
 
 1. Clone the project
-2. Run `cargo run --bin dir-nuke ~/Projects` to search into `~/Projects` directory
+2. Run the following to search into `~/Projects` directory:
+```sh
+cargo run --bin dir-nuke ~/Projects
+``` 
+</details>
+
 
 
 ###
