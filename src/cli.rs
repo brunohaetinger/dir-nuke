@@ -1,5 +1,9 @@
 use std::env;
 
+pub fn is_help() -> bool {
+    env::args().any(|arg| arg == "--help")
+}
+
 pub fn is_verbose() -> bool {
     env::args().any(|arg| arg == "--verbose")
 }

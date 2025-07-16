@@ -2,8 +2,9 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::Instant;
 use std::io;
+use std::{thread, time::Duration};
 
-use dir_nuke::cli::get_target_path;
+use dir_nuke::cli::{get_target_path, is_help};
 use dir_nuke::cli::is_verbose;
 use ratatui::widgets::{ListState, Paragraph};
 use rayon::prelude::*;
@@ -112,6 +113,7 @@ impl App {
                 self.messages.push(format!("❌ Failed to delete {}: {}", entry.path.display(), e));
             } else {
                 self.messages.push(format!("✅ Deleted {}", entry.path.display()));
+                thread::sleep(Duration::from_millis(2000));
                 self.exit = true;
             }
         }
@@ -250,6 +252,10 @@ fn human_label(entry: &NodeModuleEntry) -> String {
 }
 
 fn main() -> io::Result<()>{
+    if is_help() {
+        println!("dir-nuke is a safe and fast CLI tool to delete or \"nuke\" directories.\n        Usage: dir-nuke <search_path>        \n");
+        return Ok(());
+    }
     let target_dir = get_target_path();
     let base_path = Path::new(&target_dir);
 
