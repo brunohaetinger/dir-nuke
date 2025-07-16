@@ -20,11 +20,32 @@ This project is a directory nuker. It is designed to safely and efficiently remo
 
 ## Usage
 
-### Cloning the project
+### 🚀 Quick Install
 
-```bash
-cargo run ~/Projects
-```
+To install the latest version of dir-nuke, run:
+
+> curl -sSfL https://raw.githubusercontent.com/brunohaetinger/dir-nuke/main/script/install-dir-nuke.sh | bash
+
+This script will:
+
+  1. Detect your OS and CPU architecture
+  1. Download the latest release from GitHub
+  1. Install dir-nuke into /usr/local/bin (you may need sudo access)
+
+After installation:
+
+> dir-nuke --help
+
+
+### Building yourself
+
+> Rust is required on this method
+
+1. Clone the project
+2. Run `cargo run --bin dir-nuke ~/Projects` to search into `~/Projects` directory
+
+
+###
 
 ### TUI Keybindings
 
