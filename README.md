@@ -24,7 +24,7 @@ This project is a directory nuker. It is designed to safely and efficiently remo
 
 To install the latest version of dir-nuke, run:
 
-> curl -sSfL https://raw.githubusercontent.com/brunohaetinger/dir-nuke/main/script/install-dir-nuke.sh | bash
+> curl -sSfL https://raw.githubusercontent.com/brunohaetinger/dir-nuke/main/scripts/install-dir-nuke.sh | bash
 
 This script will:
 
