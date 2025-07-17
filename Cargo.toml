@@ -1,7 +1,7 @@
 [package]
 name = "dir-nuke"
-version = "0.2.0"
-edition = "2024"
+version = "0.2.1"
+edition = "2025"
 license = "MIT"
 description = "CLI tool to clean dependencies directories, like node_modules"
 
@@ -17,7 +17,7 @@ humansize = "2.1"       # To display sizes like 32MB instead of raw bytes
 
 # For generating debian .deb
 [package.metadata.deb]
-maintainer = "Bruno Haetinger <brunohaetinger@gmail.com"
+maintainer = "Bruno Haetinger <brunohaetinger@gmail.com>"
 depends = "libc6 (>= 2.2.5)"
 assets = [
     ["target/release/dir-nuke", "usr/bin/", "755"]
