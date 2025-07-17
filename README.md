@@ -67,5 +67,5 @@ cargo run --bin dir-nuke ~/Projects
 | `Space`           | Toggle selection of a directory      |
 | `h`               | Unselect current item                |
 | `l`               | Select current item                  |
-| `Del`           | Confirm and delete selected directories |
+| `Enter`           | Confirm and delete selected directories |
 | `Esc`, `q`        | Cancel application and exit          |

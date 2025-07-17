@@ -85,7 +85,7 @@ impl App {
     fn handle_key_event(&mut self, key_event: KeyEvent) {
         match key_event.code {
             KeyCode::Esc | KeyCode::Char('q') => self.exit(),
-            KeyCode::Delete => self.delete_selected(),
+            KeyCode::Enter => self.delete_selected(),
             KeyCode::Char('l') => self.select_item(),
             KeyCode::Char('h') => self.unselect_item(),
             KeyCode::Char(' ') => self.toggle_item_selection(),
@@ -112,8 +112,10 @@ impl App {
             if let Err(e) = fs::remove_dir_all(&entry.path) {
                 self.messages.push(format!("❌ Failed to delete {}: {}", entry.path.display(), e));
             } else {
-                self.messages.push(format!("✅ Deleted {}", entry.path.display()));
-                thread::sleep(Duration::from_millis(2000));
+                // TODO: fix messaging. Print outside when close.
+                // Maybe post on app_result
+                // self.messages.push(format!("✅ Deleted {}", entry.path.display()));
+                // thread::sleep(Duration::from_millis(2000));
                 self.exit = true;
             }
         }
@@ -167,7 +169,7 @@ impl Widget for &App {
             "<Space>".blue().bold(),
             " | ".into(),
             " Delete selected ".into(),
-            "<Del>".blue().bold(),
+            "<Enter>".blue().bold(),
             " | ".into(),
             " Quit ".into(),
             "<Esc> ".blue().bold(),
