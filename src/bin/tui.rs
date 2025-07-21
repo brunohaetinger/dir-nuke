@@ -27,7 +27,15 @@ pub struct NodeModuleEntry {
     size_bytes: u64,
 }
 
-#[derive(Debug, Default)]
+// #[derive(Debug, Default)]
+enum AppState {
+    Idle,
+    Loading,
+    ConfirmDelete,
+    Exit,
+}
+
+// #[derive(Debug)]
 pub struct App {
     list_state: ListState,
     selected: Vec<bool>,
