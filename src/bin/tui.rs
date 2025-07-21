@@ -21,7 +21,7 @@ use ratatui::{
     widgets::{Block, List, ListItem, Widget},
     DefaultTerminal, Frame,
 };
-#[derive(Debug, Default)]
+// #[derive(Debug, Default)]
 pub struct NodeModuleEntry {
     path: PathBuf,
     size_bytes: u64,
