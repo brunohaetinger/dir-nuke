@@ -37,6 +37,9 @@ enum AppState {
 
 // #[derive(Debug)]
 pub struct App {
+    state: AppState,
+    spinner_index: usize,
+    last_tick: Instant,
     list_state: ListState,
     selected: Vec<bool>,
     entries: Vec<NodeModuleEntry>,
@@ -56,6 +59,9 @@ impl App {
         let messages = Vec::new(); // Initialize messages
 
         App {
+            state: AppState::Idle,
+            spinner_index: 0,
+            last_tick: Instant::now(),
             list_state,
             selected,
             entries,
