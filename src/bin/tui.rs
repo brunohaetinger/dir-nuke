@@ -43,8 +43,6 @@ pub struct App {
     list_state: ListState,
     selected: Vec<bool>,
     entries: Vec<NodeModuleEntry>,
-    exit: bool,
-    messages: Vec<String>, // New field to store messages
 }
 
 const SPINNER_FRAMES: &[&str] = &["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
@@ -57,7 +55,6 @@ impl App {
             list_state.select(Some(0));
         }
         let selected = vec![false; entries.len()];
-        let messages = Vec::new(); // Initialize messages
 
         App {
             state: AppState::Idle,
@@ -66,8 +63,6 @@ impl App {
             list_state,
             selected,
             entries,
-            exit: false,
-            messages, // Add messages to the struct
         }
     }
 
