@@ -111,7 +111,7 @@ impl App {
     }
 
     fn exit(&mut self) {
-        self.exit = true;
+        self.state = AppState::Exit;
     }
 
     fn delete_selected(&mut self) {
@@ -131,7 +131,8 @@ impl App {
                 // Maybe post on app_result
                 // self.messages.push(format!("✅ Deleted {}", entry.path.display()));
                 // thread::sleep(Duration::from_millis(2000));
-                self.exit = true;
+                // self.exit();
+                self.state = AppState::Exit;
             }
         }
 
