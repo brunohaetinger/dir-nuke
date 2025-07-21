@@ -47,6 +47,7 @@ pub struct App {
     messages: Vec<String>, // New field to store messages
 }
 
+const SPINNER_FRAMES: &[&str] = &["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
 
 impl App {
 
