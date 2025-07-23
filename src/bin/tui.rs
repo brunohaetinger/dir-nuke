@@ -95,7 +95,9 @@ impl App {
     fn handle_key_event(&mut self, key_event: KeyEvent) {
         match key_event.code {
             KeyCode::Esc | KeyCode::Char('q') => self.exit(),
-            KeyCode::Enter => self.delete_selected(),
+                    KeyCode::Enter => {
+                        self.state = AppState::ConfirmDelete;
+                    },
             KeyCode::Char('l') => self.select_item(),
             KeyCode::Char('h') => self.unselect_item(),
             KeyCode::Char(' ') => self.toggle_item_selection(),
