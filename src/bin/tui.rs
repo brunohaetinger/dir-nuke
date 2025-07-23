@@ -70,7 +70,7 @@ impl App {
     pub fn run(&mut self, terminal: &mut DefaultTerminal) -> io::Result<()> {
         while !self.exit {
             terminal.draw(|frame| self.draw(frame))?;
-            self.handle_events()?;
+            self.handle_events_on_list_dir()?;
         }
         Ok(())
     }
@@ -80,7 +80,7 @@ impl App {
     }
 
     // updates the application's state based on user input
-    fn handle_events(&mut self) -> io::Result<()> {
+    fn handle_events_on_list_dir(&mut self) -> io::Result<()> {
         match event::read()? {
             // it's important to check that the event is a key press event as
             // crossterm also emits key release and repeat events on Windows.
