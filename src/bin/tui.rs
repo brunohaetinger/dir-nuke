@@ -208,11 +208,6 @@ impl Widget for &App {
         // Render the list using the list_state
         ratatui::widgets::StatefulWidget::render(list, chunks[0], buf, &mut self.list_state.clone());
 
-        // Render messages
-        let messages_text: Vec<Line> = self.messages.iter().map(|msg| Line::from(msg.clone())).collect();
-        let messages_block = Block::bordered().title("Messages");
-        let messages_paragraph = Paragraph::new(Text::from(messages_text)).block(messages_block);
-        messages_paragraph.render(chunks[1], buf);
     }
 }
 
