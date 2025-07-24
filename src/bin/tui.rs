@@ -51,7 +51,8 @@ const SPINNER_FRAMES: &[&str] = &["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦
 
 impl App {
 
-    pub fn new(entries: Vec<NodeModuleEntry>)-> App {
+    pub fn new()-> App {
+        let entries = get_dirs_on_path();
         let mut list_state = ListState::default();
         if !entries.is_empty() {
             list_state.select(Some(0));
@@ -90,7 +91,8 @@ impl App {
                         },
                         AppState::ConfirmDelete => match key.code {
                             KeyCode::Char('y') => {
-                                self.state = AppState::Loading; // simulate delete
+                                // self.state = AppState::Loading; // simulate delete
+                                // TODO: reload dirs
                                 self.delete_selected();
                             }
                             KeyCode::Char('n') | KeyCode::Esc => {
@@ -350,11 +352,7 @@ fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
         .split(popup_layout[1])[1]
 }
 
-fn main() -> io::Result<()>{
-    if is_help() {
-        println!("dir-nuke is a safe and fast CLI tool to delete or \"nuke\" directories.\n        Usage: dir-nuke <search_path>        \n");
-        return Ok(());
-    }
+fn get_dirs_on_path() -> Vec<NodeModuleEntry> {
     let target_dir = get_target_path();
     let base_path = Path::new(&target_dir);
 
@@ -363,7 +361,7 @@ fn main() -> io::Result<()>{
     let found_dirs = find_node_modules(base_path);
     if found_dirs.is_empty() {
         println!("✅ No node_modules folders found.");
-        return Ok(());
+        return vec![];
     }
     let search_duration = scan_start.elapsed();
     if is_verbose(){
@@ -373,12 +371,20 @@ fn main() -> io::Result<()>{
     println!("📦 Calculating sizes...");
     let mut entries = calculate_sizes(&found_dirs);
     entries.sort_by_key(|e| std::cmp::Reverse(e.size_bytes));
+    return entries;
+}
 
+fn main() -> io::Result<()>{
+    if is_help() {
+        println!("dir-nuke is a safe and fast CLI tool to delete or \"nuke\" directories.\n        Usage: dir-nuke <search_path>        \n");
+        return Ok(());
+    }
+    
     // TODO: calculate sum of size_bytes in entries
 
     // -- NEW tui
     let mut terminal = ratatui::init();
-    let mut app = App::new(entries);
+    let mut app = App::new();
     let app_result = app.run(&mut terminal);
     ratatui::restore();
     app_result
