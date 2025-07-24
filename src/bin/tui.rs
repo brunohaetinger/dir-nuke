@@ -187,6 +187,13 @@ impl App {
         let next = if i >= self.entries.len() - 1 { 0 } else { i + 1 };
         self.list_state.select(Some(next));
     }
+
+    fn update_spinner(&mut self) {
+        if self.last_tick.elapsed() >= Duration::from_millis(100) {
+            self.spinner_index = (self.spinner_index + 1) % SPINNER_FRAMES.len();
+            self.last_tick = Instant::now();
+        }
+    }
 }
 
 impl Widget for &App {
