@@ -76,7 +76,40 @@ impl App {
     }
 
     fn draw(&self, frame: &mut Frame) {
-        frame.render_widget(self, frame.area());
+        let frame_area = frame.area();
+        // Main layout
+        let block = Block::default().title("App").borders(Borders::ALL);
+        frame.render_widget(block, frame_area);
+
+        match self.state {
+            AppState::Loading => {
+                let spinner = SPINNER_FRAMES[self.spinner_index];
+                let loading = Paragraph::new(format!("Loading... {}", spinner))
+                    .style(Style::default().fg(Color::Yellow))
+                    .alignment(Alignment::Center);
+                let area = centered_rect(30, 10, frame_area);
+                frame.render_widget(Clear, area); // clear area
+                frame.render_widget(loading, area);
+            }
+            AppState::ConfirmDelete => {
+                let area = centered_rect(60, 30, frame_area);
+                let question = Paragraph::new(vec![
+                    Line::from(Span::raw("Are you sure you want to delete?")),
+                    Line::from(Span::raw("")),
+                    Line::from(Span::styled("Confirm (Y) | Cancel (N)", Style::default().fg(Color::Yellow))),
+                ])
+                .alignment(Alignment::Center)
+                .block(Block::default().title("Confirm Delete").borders(Borders::ALL));
+                frame.render_widget(Clear, area); // clear area
+                frame.render_widget(question, area);
+            }
+            _ => {
+                // let help = Paragraph::new("Press 'd' to delete, 'l' to load, 'q' to quit.")
+                //     .alignment(Alignment::Center);
+                // frame.render_widget(help, centered_rect(50, 5, frame_area));
+                frame.render_widget(self, frame_area);
+            }
+        }
     }
 
     // updates the application's state based on user input
