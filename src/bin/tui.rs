@@ -2,11 +2,13 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::Instant;
 use std::io;
-use std::{thread, time::Duration};
+use std::{time::Duration};
 
 use dir_nuke::cli::{get_target_path, is_help};
 use dir_nuke::cli::is_verbose;
-use ratatui::widgets::{ListState, Paragraph};
+use ratatui::layout::{Alignment, Constraint, Direction, Layout};
+use ratatui::text::Span;
+use ratatui::widgets::{Borders, Clear, ListState, Paragraph};
 use rayon::prelude::*;
 use walkdir::WalkDir;
 use humansize::{format_size, DECIMAL};
@@ -17,7 +19,7 @@ use ratatui::{
     layout::Rect,
     style::{Color, Modifier, Style, Stylize},
     symbols::border,
-    text::{Line, Text},
+    text::{Line},
     widgets::{Block, List, ListItem, Widget},
     DefaultTerminal, Frame,
 };
@@ -29,7 +31,7 @@ pub struct NodeModuleEntry {
 
 // #[derive(Debug, Default)]
 enum AppState {
-    Idle,
+    ListDirs,
     Loading,
     ConfirmDelete,
     Exit,
@@ -57,7 +59,7 @@ impl App {
         let selected = vec![false; entries.len()];
 
         App {
-            state: AppState::Idle,
+            state: AppState::ListDirs,
             spinner_index: 0,
             last_tick: Instant::now(),
             list_state,
@@ -68,9 +70,44 @@ impl App {
 
     /// runs the application's main loop until the user quits
     pub fn run(&mut self, terminal: &mut DefaultTerminal) -> io::Result<()> {
-        while !self.exit {
+        let tick_rate = Duration::from_millis(10);
+        loop {
             terminal.draw(|frame| self.draw(frame))?;
-            self.handle_events_on_list_dir()?;
+            
+            if event::poll(tick_rate)? {
+                if let Event::Key(key) = event::read()? {
+                    match self.state {
+                        AppState::Exit => {
+                            self.state = AppState::Exit;
+                            break;
+                        }
+                        AppState::ListDirs => {
+                            self.handle_events_on_list_dir(key)?;
+                        },
+                        AppState::Loading => match key.code {
+                            KeyCode::Esc => self.state = AppState::ListDirs,
+                            _ => {}
+                        },
+                        AppState::ConfirmDelete => match key.code {
+                            KeyCode::Char('y') => {
+                                self.state = AppState::Loading; // simulate delete
+                                self.delete_selected();
+                            }
+                            KeyCode::Char('n') | KeyCode::Esc => {
+                                self.state = AppState::ListDirs;
+                            }
+                            _ => {}
+                        },
+                    }
+                }
+            }
+
+            if matches!(self.state, AppState::Loading) {
+                self.update_spinner();
+            }
+
+
+            
         }
         Ok(())
     }
@@ -114,22 +151,22 @@ impl App {
 
     // updates the application's state based on user input
     fn handle_events_on_list_dir(&mut self, key_event: KeyEvent) -> io::Result<()> {
-            // it's important to check that the event is a key press event as
-            // crossterm also emits key release and repeat events on Windows.
+        // it's important to check that the event is a key press event as
+        // crossterm also emits key release and repeat events on Windows.
         match key_event.kind {
             KeyEventKind::Press => {
-        match key_event.code {
+                match key_event.code {
                     KeyCode::Esc | KeyCode::Char('q') => self.state = AppState::Exit,
                     KeyCode::Enter => {
                         self.state = AppState::ConfirmDelete;
                     },
-            KeyCode::Char('l') => self.select_item(),
-            KeyCode::Char('h') => self.unselect_item(),
-            KeyCode::Char(' ') => self.toggle_item_selection(),
-            KeyCode::Up | KeyCode::Char('k') | KeyCode::BackTab => self.move_up(),
-            KeyCode::Down | KeyCode::Char('j') | KeyCode::Tab => self.move_down(),
-            _ => {}
-        }
+                    KeyCode::Char('l') => self.select_item(),
+                    KeyCode::Char('h') => self.unselect_item(),
+                    KeyCode::Char(' ') => self.toggle_item_selection(),
+                    KeyCode::Up | KeyCode::Char('k') | KeyCode::BackTab => self.move_up(),
+                    KeyCode::Down | KeyCode::Char('j') | KeyCode::Tab => self.move_down(),
+                    _ => {}
+                }
             },
             _ => {}
         };
@@ -144,21 +181,21 @@ impl App {
             .map(|(entry, _)| entry)
             .collect();
 
-        self.messages.push(format!("🗑 Deleting {} folders...", to_delete.len()));
+        // self.messages.push(format!("🗑 Deleting {} folders...", to_delete.len()));
         for entry in to_delete {
-            if let Err(e) = fs::remove_dir_all(&entry.path) {
-                self.messages.push(format!("❌ Failed to delete {}: {}", entry.path.display(), e));
+            if let Err(_) = fs::remove_dir_all(&entry.path) {
+                // self.messages.push(format!("❌ Failed to delete {}: {}", entry.path.display(), e));
             } else {
                 // TODO: fix messaging. Print outside when close.
                 // Maybe post on app_result
                 // self.messages.push(format!("✅ Deleted {}", entry.path.display()));
-                // thread::sleep(Duration::from_millis(2000));
+                // thread::sleep(Duration::from_millis(300));
                 // self.exit();
                 self.state = AppState::Exit;
             }
         }
 
-        self.messages.push("🎉 Done.".to_string());
+        // self.messages.push("🎉 Done.".to_string());
     }
 
     fn select_item(&mut self) {
@@ -204,7 +241,6 @@ impl Widget for &App {
             .direction(Direction::Vertical)
             .constraints([
                 Constraint::Min(0), // For the list
-                Constraint::Length(self.messages.len() as u16 + 2), // For messages + border
             ])
             .split(area);
 
