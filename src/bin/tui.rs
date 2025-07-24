@@ -119,7 +119,7 @@ impl App {
         match key_event.kind {
             KeyEventKind::Press => {
         match key_event.code {
-            KeyCode::Esc | KeyCode::Char('q') => self.exit(),
+                    KeyCode::Esc | KeyCode::Char('q') => self.state = AppState::Exit,
                     KeyCode::Enter => {
                         self.state = AppState::ConfirmDelete;
                     },
@@ -134,10 +134,6 @@ impl App {
             _ => {}
         };
         Ok(())
-    }
-
-    fn exit(&mut self) {
-        self.state = AppState::Exit;
     }
 
     fn delete_selected(&mut self) {
