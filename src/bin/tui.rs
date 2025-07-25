@@ -114,6 +114,24 @@ impl App {
         Ok(())
     }
 
+    fn reload_dirs(&mut self) {
+        self.state = AppState::Loading;
+        self.spinner_index = 0;
+        self.last_tick = Instant::now();
+
+        let entries = get_dirs_on_path();
+        let mut list_state = ListState::default();
+        if !entries.is_empty() {
+            list_state.select(Some(0));
+        }
+        let selected = vec![false; entries.len()];
+
+        self.list_state = list_state;
+        self.selected = selected;
+        self.entries = entries;
+        self.state = AppState::ListDirs;
+    }
+
     fn draw(&self, frame: &mut Frame) {
         let frame_area = frame.area();
         // Main layout
