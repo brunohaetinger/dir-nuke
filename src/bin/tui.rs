@@ -94,6 +94,8 @@ impl App {
                                 // self.state = AppState::Loading; // simulate delete
                                 // TODO: reload dirs
                                 self.delete_selected();
+                                self.reload_dirs();
+                                self.state = AppState::Exit;
                             }
                             KeyCode::Char('n') | KeyCode::Esc => {
                                 self.state = AppState::ListDirs;
@@ -193,7 +195,7 @@ impl App {
         Ok(())
     }
 
-    fn delete_selected(&mut self) {
+    fn delete_selected(&self) {
         let to_delete: Vec<&NodeModuleEntry> = self.entries
             .iter()
             .zip(self.selected.iter())
@@ -211,7 +213,6 @@ impl App {
                 // self.messages.push(format!("✅ Deleted {}", entry.path.display()));
                 // thread::sleep(Duration::from_millis(300));
                 // self.exit();
-                self.state = AppState::Exit;
             }
         }
 
